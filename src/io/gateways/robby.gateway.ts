@@ -18,14 +18,17 @@ export class RobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger('ws: /robby');
 
   @WebSocketServer()
-  private readonly wss: Namespace;
-  // wss = { namw, server, sockets, adapter, ... }
+  private readonly robby: Namespace;
+  // robby = { namw, server, sockets, adapter, ... }
 
   handleConnection(@ConnectedSocket() socket: MySocket) {
     this.logger.log(`[ ${socket.id} ] connected`);
 
     socket.onAny((event: string) => {
       this.logger.log(`[ ${socket.id} ] ${event}`);
+      // this.robby.emit('test_event', 'robby.emit');
+      // socket.broadcast.emit('test_event', 'socket.broadcast.emit');
+      // this.robby.server.of('/chats').emit('test_event', 'this.robby.server.of("/chats").emitrobby.emit');
     });
   }
   handleDisconnect(@ConnectedSocket() socket: MySocket) {
