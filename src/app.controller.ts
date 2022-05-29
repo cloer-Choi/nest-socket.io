@@ -6,11 +6,11 @@ export class AppController {
   @Render('index')
   getIndex() {
     const rooms = [
-      { title: 'room1', id: '111111' },
-      { title: 'room2', id: '222222' },
-      { title: 'room3', id: '333333' },
-      { title: 'room4', id: '444444' },
-      { title: 'room5', id: '5' },
+      { roomName: 'room1', roomId: '111111' },
+      { roomName: 'room2', roomId: '222222' },
+      { roomName: 'room3', roomId: '333333' },
+      { roomName: 'room4', roomId: '444444' },
+      { roomName: 'room5', roomId: '5' },
     ];
     return { rooms };
   }

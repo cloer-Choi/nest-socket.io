@@ -23,8 +23,8 @@ html(lang="en")
           button Create
         ul
           each room in rooms  
-            li(id=`${room.id}`)
-              a(href=`/rooms/${room.title}`)= room.title 
+            li(id=`${room.roomId}`)
+              a(href=`/rooms/${room.roomName}`)= room.roomName 
         button Log Out
 
     script(src="/socket.io/socket.io.js")
