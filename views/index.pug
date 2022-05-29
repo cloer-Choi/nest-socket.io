@@ -5,16 +5,28 @@ html(lang="en")
     meta(http-equiv="X-UA-Compatible", content="IE=edge")
     meta(name="viewport", content="width=device-width, initial-scale=1.0")
     link(rel="stylesheet", href="https://unpkg.com/mvp.css")
-    link(rel="stylesheet", href="/public/css/style.css")
+    link(rel="stylesheet", href="/public/css/index.css")
     title Nest - Socket.io
   body 
     header 
       h1 Nest Chat
     main
-      form#login-form(method="post", action="/rooms")
-        input(type="text",name="nickname", placeholder="Nickname" ) 
-        button Log In
+      #login
+        form
+          input(type="text",name="nickname", placeholder="Nickname", required) 
+          button Log In
+      
+      #robby(hidden=true)
+        h2
+        form
+          input(type="text", placeholder="Create a new room", required) 
+          button Create
+        ul
+          each room in rooms  
+            li(id=`${room.id}`)
+              a(href=`/rooms/${room.title}`)= room.title 
+        button Log Out
 
-  
     script(src="/socket.io/socket.io.js")
-    script(src="/public/js/script.js") 
+    script(src="/public/js/index.js") 
+    
