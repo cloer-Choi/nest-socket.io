@@ -1,6 +1,6 @@
 function init() {
   const SESSION_KEYS = { nickname: 'nickname' };
-  const socket = io(`${window.location}robby`, { autoConnect: false });
+  const socket = io(`/robby`, { autoConnect: false });
 
   // DOM elements
   const $login = document.getElementById('login');
@@ -11,16 +11,16 @@ function init() {
   const $roomList = $robby.querySelector('ul');
   const $logOutBtn = $robby.lastChild;
 
-  // DOM elements init
-  const initNicname = sessionStorage.getItem(SESSION_KEYS.nickname) || null;
-  if (initNicname === null) {
-    $login.hidden = false;
-    $robby.hidden = true;
-  } else {
-    $login.hidden = true;
-    $robby.hidden = false;
-    $h2.innerText = `Hello, ${sessionStorage.getItem(SESSION_KEYS.nickname)}!`;
-  }
+  // DOM elements Init
+  let isLoggedIn =
+    sessionStorage.getItem(SESSION_KEYS.nickname) !== null &&
+    sessionStorage.getItem(SESSION_KEYS.nickname) !== '';
+
+  $login.hidden = isLoggedIn;
+  $robby.hidden = !isLoggedIn;
+  $h2.innerText = isLoggedIn
+    ? `Hello, ${sessionStorage.getItem(SESSION_KEYS.nickname)}!`
+    : '';
 
   // DOM functions
   const login = (nickname) => {
@@ -72,6 +72,9 @@ function init() {
       addRoom(roomId, roomName);
     });
   });
+
+  // Socket Init
+  if (isLoggedIn) socket.connect();
 
   // Socket Events
   socket.onAny((event, ...args) => {
