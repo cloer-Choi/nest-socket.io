@@ -6,7 +6,7 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
-import { MySocket } from 'src/io/common/custom.type';
+import { MySocket } from 'src/common/custom.type';
 
 @WebSocketGateway({ namespace: 'chats' })
 export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {

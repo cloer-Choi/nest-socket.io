@@ -9,9 +9,12 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Namespace } from 'socket.io';
-import { MySocket } from '../common/custom.type';
-import { ROBBY_EVENTS } from '../common/events';
-import { RobbyCreateRoomDto, RobbyDeleteRoomDto } from '../common/socket.dto';
+import { MySocket } from '../../common/custom.type';
+import { ROBBY_EVENTS } from '../../common/events';
+import {
+  RobbyCreateRoomDto,
+  RobbyDeleteRoomDto,
+} from '../../common/socket.dto';
 
 @WebSocketGateway({ namespace: '/robby' })
 export class RobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -26,9 +29,9 @@ export class RobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     socket.onAny((event: string) => {
       this.logger.log(`[ ${socket.id} ] ${event}`);
-      // this.robby.emit('test_event', 'robby.emit');
-      // socket.broadcast.emit('test_event', 'socket.broadcast.emit');
-      // this.robby.server.of('/chats').emit('test_event', 'this.robby.server.of("/chats").emitrobby.emit');
+      // this.robby.emit('test_event', 'robby.emit'); //: to Nsp including me
+      // socket.broadcast.emit('test_event', 'socket.broadcast.emit'); //: to Nsp without me
+      // this.robby.server.of('/chats').emit('test_event', 'this.robby.server.of("/chats").emitrobby.emit'); //: to another
     });
   }
   handleDisconnect(@ConnectedSocket() socket: MySocket) {
@@ -56,5 +59,12 @@ export class RobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     socket.broadcast.emit(ROBBY_EVENTS.DELETE_ROOM, { roomId });
     return null;
+  }
+
+  emitDeleteRoom({ roomId }: RobbyDeleteRoomDto) {
+    this.robby.emit(ROBBY_EVENTS.DELETE_ROOM, { roomId });
+  }
+  emitCreateRoom({ roomName }: RobbyCreateRoomDto) {
+    this.robby.emit(ROBBY_EVENTS.DELETE_ROOM, { roomName });
   }
 }
