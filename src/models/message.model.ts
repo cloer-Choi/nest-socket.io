@@ -14,7 +14,6 @@ export class Message extends Document {
     type: {
       _id: { type: Types.ObjectId, required: true, ref: 'users' },
       nickname: { type: String, required: true, unique: true },
-      sid: { type: String, required: true, unique: true },
     },
   })
   @IsNotEmpty()

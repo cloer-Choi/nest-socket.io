@@ -1,10 +1,10 @@
-export const ROBBY_EVENTS = {
-  CREATE_ROOM: 'create_room',
-  DELETE_ROOM: 'delete_room',
-} as const;
-
 export const CHATS_EVENTS = {
-  NEW_MESSAGE: 'new_message',
+  LOGIN: 'login', //
+  LOGOUT: 'logout', //
+  ENTER_ROBBY: 'enter_robby', //
+  CREATE_ROOM: 'create_room', //
+  DELETE_ROOM: 'delete_room',
+  ENTER_ROOM: 'enter_room',
   LEAVE_ROOM: 'leave_room',
-  JOIN_ROOM: 'join_room',
+  NEW_MESSAGE: 'new_message',
 } as const;
