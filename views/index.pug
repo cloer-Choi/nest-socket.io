@@ -8,25 +8,10 @@ html(lang="en")
     link(rel="stylesheet", href="/public/css/index.css")
     title Nest - Socket.io
   body 
-    header 
-      h1 Nest Chat
-    main
-      #login
-        form
-          input(type="text",name="nickname", placeholder="Nickname", required) 
-          button Log In
-      
-      #robby(hidden=true)
-        h2
-        form
-          input(type="text", placeholder="Create a new room", required) 
-          button Create
-        ul
-          each room in rooms  
-            li(id=`${room.roomId}`)
-              a(href=`/rooms/${room.roomName}`)= room.roomName 
-        button Log Out
+    header Nest Chat
+    main#root
 
-    script(src="/socket.io/socket.io.js")
-    script(src="/public/js/index.js") 
-    
+    script(src="/socket.io/socket.io.js") 
+    script(src="/public/js/app.js", type="module") 
+
+
