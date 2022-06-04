@@ -21,6 +21,9 @@ class App {
     this.socket.on('enter_room', ({ nickname }) =>
       this.addChat({ message: `${nickname} has entered.`, nickname: 'system' }),
     );
+    this.socket.on('leave_room', ({ nickname }) =>
+      this.addChat({ message: `${nickname} has left.`, nickname: 'system' }),
+    );
     this.socket.on('new_message', ({ chat }) => this.addChat(chat));
   }
 
@@ -90,9 +93,11 @@ class App {
 
       this.socket.emit('create_room', { roomName }, (res) => {
         if (!res.isSuccess) {
-          this.route('login', res.reason);
+          // TODO: error exception
+          console.log(res.reason);
         } else {
           const { roomId } = res.data;
+          //TODO: route chat
           this.addRoom({ roomId, roomName });
         }
       });
@@ -119,18 +124,26 @@ class App {
       $input.value = '';
       console.log(message);
     });
-    const $leaveButton = createButton('Leave'); // TODO:
+    const $leaveButton = createButton('Leave');
     const $robbyButton = createButton('Robby');
+    $leaveButton.addEventListener('click', () => {
+      this.socket.emit('leave_room', { roomName }, (res) => {
+        if (res.isSuccess) this.route('robby');
+      }); // TODO:
+    });
+    $robbyButton.addEventListener('click', () => this.route('robby'));
 
     this.socket.emit('enter_room', { roomName }, (res) => {
-      if (!res.isSuccess) this.route('login', res.reason);
-      else {
+      if (!res.isSuccess) {
+        //TODO:
+        console.log(res.reason);
+      } else {
         const { chats } = res.data;
         chats.forEach((chat) => this.addChat(chat));
       }
     });
 
-    return [$h2, $chatList, $form, $leaveButton, $robbyButton];
+    return [$h2, $chatList, $form, $robbyButton, $leaveButton];
   }
 
   //
@@ -139,14 +152,13 @@ class App {
     const $li = createLiWithClass();
     const $a = document.createElement('a');
     $a.onclick = () => this.route('chat', roomName);
-
     $a.innerText = roomName;
     $li.id = roomId;
     $li.appendChild($a);
     $roomList.appendChild($li);
   }
   removeRoom(roomId) {
-    document.querySelector(`#room-list > #${roomId}`).remove();
+    document.getElementById(roomId).remove();
   }
 
   addChat({ message, nickname }) {

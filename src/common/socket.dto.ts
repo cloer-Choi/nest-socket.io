@@ -10,6 +10,9 @@ export class DeleteRoomDto {
 export class EnterRoomDto {
   readonly roomName: string;
 }
+export class LeaveRoomDto {
+  readonly roomName: string;
+}
 export class NewMessageDto {
   readonly roomName: string;
   readonly message: string;

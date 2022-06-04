@@ -5,15 +5,14 @@ import {
   OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
-  // WebSocketServer,
 } from '@nestjs/websockets';
-// import { Namespace } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { MySocket } from 'src/common/custom.type';
 import { CHATS_EVENTS } from 'src/common/events';
 import {
   CreateRoomDto,
   EnterRoomDto,
+  LeaveRoomDto,
   LogInDto,
   NewMessageDto,
 } from 'src/common/socket.dto';
@@ -26,7 +25,7 @@ import { Message } from 'src/models/message.model';
 @WebSocketGateway({ namespace: 'chats' })
 export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // @WebSocketServer()
-  // private readonly chatNsp: Namespace; // chatNsp { namw, server, sockets, adapter, ... }
+  // private readonly chatNsp: Namespace; // chatNsp { name, server, sockets, adapter, ... }
   private readonly logger = new Logger('ws: /chats');
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
@@ -46,6 +45,7 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
   async handleDisconnect(@ConnectedSocket() socket: MySocket) {
     this.logger.log(`[ ${socket?.nickname ?? socket.id} ] disconnected`);
+    // TODO: providerDeleteUser
     await this.userModel.deleteOne({ sid: socket.id });
   }
 
@@ -64,14 +64,13 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket['nickname'] = nickname;
     this.logger.log(`[ ${socket.id} => ${nickname}]`);
     await this.userModel.create({ nickname, sid: socket.id });
-
     return { isSuccess: true };
   }
 
   @SubscribeMessage(CHATS_EVENTS.LOGOUT)
   async onLogOut(@ConnectedSocket() socket: MySocket) {
+    // TODO: providerDeleteUser
     await this.userModel.deleteOne({ sid: socket.id });
-    // delete room
     return { isSuccess: true };
   }
 
@@ -95,12 +94,20 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         isSuccess: false,
         reason: `A room with the name "${roomName}" already exists`,
       };
-    const user = await this.userModel.findOne({ sid: socket.id });
+    const user = await this.userModel.findOne(
+      { sid: socket.id },
+      { id: true, nickname: true },
+    );
     if (!user) return { isSuccess: false, reason: 'Should be logged in.' };
 
     const roomId = `${socket.id}${roomName}${Date.now()}`;
-    await this.roomModel.create({ roomId, roomName, members: user });
+    await this.roomModel.create({
+      roomId,
+      roomName,
+      members: [user],
+    });
     const room = { roomId, roomName };
+    socket.join(roomName);
     socket.broadcast.emit(CHATS_EVENTS.CREATE_ROOM, { room }); // broadcast to Nsp
 
     return { isSuccess: true, data: { roomId } };
@@ -111,23 +118,63 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() socket: MySocket,
     @MessageBody() { roomName }: EnterRoomDto,
   ) {
-    // TODO: guard or filter about nickname validation
-    const nickname = socket.nickname;
-    if (!nickname) return { isSuccess: false, reason: 'Should be logged in.' };
+    const user = await this.userModel.findOne(
+      { sid: socket.id },
+      { id: true, nickname: true },
+    );
+    if (!user) return { isSuccess: false, reason: 'Should be logged in.' };
 
-    const doesRoomExist = await this.roomModel.exists({ roomName });
-    if (!doesRoomExist)
+    const room = await this.roomModel.findOneAndUpdate(
+      { roomName },
+      { $push: { members: user } },
+    );
+    if (!room)
       return {
         isSuccess: false,
         reason: `There is no room with that name '${roomName}'.`,
       };
 
     socket.join(roomName);
-    socket.broadcast.to(roomName).emit(CHATS_EVENTS.ENTER_ROOM, { nickname });
+    socket.broadcast
+      .to(roomName)
+      .emit(CHATS_EVENTS.ENTER_ROOM, { nickname: user.nickname });
 
-    // TODO: after I joined
+    // TODO: get messages "after" I joined
     const chats = await this.messageModel.find({ room: { roomName } });
     return { isSuccess: true, data: { chats } };
+  }
+
+  @SubscribeMessage(CHATS_EVENTS.LEAVE_ROOM)
+  async onLeaveRoom(
+    @ConnectedSocket() socket: MySocket,
+    @MessageBody() { roomName }: LeaveRoomDto,
+  ) {
+    // TODO: guard or filter about nickname validation
+    const user = await this.userModel.findOne(
+      { sid: socket.id },
+      { id: true, nickname: true },
+    );
+    if (!user) return { isSuccess: false, reason: 'Should be logged in.' };
+
+    const room = await this.roomModel.findOneAndUpdate(
+      { roomName },
+      { $pull: { members: user } },
+    );
+    if (!room)
+      return {
+        isSuccess: false,
+        reason: `There is no room with that name '${roomName}'.`,
+      };
+
+    socket.broadcast
+      .to(roomName)
+      .emit(CHATS_EVENTS.LEAVE_ROOM, { nickname: user.nickname });
+    socket.leave(roomName);
+    if (!socket.nsp.adapter.rooms.has(roomName)) {
+      await this.roomModel.deleteOne({ roomName });
+      socket.broadcast.emit(CHATS_EVENTS.DELETE_ROOM, { roomId: room.roomId }); // broadcast to Nsp
+    }
+    return { isSuccess: true };
   }
 
   @SubscribeMessage(CHATS_EVENTS.NEW_MESSAGE)
@@ -159,5 +206,25 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .emit(CHATS_EVENTS.NEW_MESSAGE, { chat: { nickname, message } });
 
     return { isSuccess: true };
+  }
+
+  // Provider
+  // providerDeleteUser: providerLeaveRoom -> delete user
+  // providerLeaveRoom: leave room -> delete empty room -> broadcast to robby
+
+  async providerDeleteUser(socket: MySocket) {
+    await this.providerLeaveAllRoom(socket);
+    await this.userModel.deleteOne({ sid: socket.id });
+  }
+  async providerLeaveAllRoom(socket: MySocket) {
+    socket.rooms.forEach((room) => {
+      socket.broadcast
+        .to(room)
+        .emit('leave_room', { nickname: socket.nickname });
+      socket.leave(room);
+
+      // delete the room if it's empty
+      // if(!socket.nsp.adapter.rooms.has(room) && )
+    });
   }
 }

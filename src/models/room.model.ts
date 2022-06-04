@@ -20,10 +20,12 @@ export class Room extends Document {
   roomName: string;
 
   @Prop({
-    type: {
-      _id: { type: Types.ObjectId, required: true, ref: 'users' },
-      nickname: { type: String, required: true, unique: true },
-    },
+    type: [
+      {
+        _id: { type: Types.ObjectId, required: true, ref: 'users' },
+        nickname: { type: String, required: true, unique: true },
+      },
+    ],
     required: true,
   })
   @IsNotEmpty()

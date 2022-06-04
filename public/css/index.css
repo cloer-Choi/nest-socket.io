@@ -1,17 +1,11 @@
+header {
+  font-size: xx-large;
+  font-weight: 700;
+}
 ul {
   list-style-type: none;
 }
 
-li {
-  width: 80vw;
-  display: flex;
-  align-items: center;
-}
-li > span {
-  flex: 7;
-  padding: 10px;
-  font-size: large;
-}
-li > button {
-  flex: 1;
+button {
+  margin-right: 10px;
 }
